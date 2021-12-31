@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"grpc-go-course/calculator/calculatorpb"
+	"io"
 	"log"
 
 	"google.golang.org/grpc"
@@ -18,7 +19,32 @@ func main() {
 	defer cc.Close()
 
 	c := calculatorpb.NewCalculatorServiceClient(cc)
-	doUnary(c)
+	// doUnary(c)
+	doServerSreaming(c)
+}
+
+func doServerSreaming(c calculatorpb.CalculatorServiceClient) {
+	fmt.Printf("Sending CalculatorService Streaming Request.")
+	req := calculatorpb.PrimeNumberRequest{
+		Number: 80,
+	}
+
+	resStream, err := c.PrimeNumberDecomposition(context.Background(), &req)
+	if err != nil {
+		log.Fatalf("Error calling Streaming Api %v", err)
+	}
+
+	for {
+		num, err := resStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error while reading stream: %v", err)
+		}
+
+		fmt.Println("Received value from stream %v", num)
+	}
 }
 
 func doUnary(c calculatorpb.CalculatorServiceClient) {
