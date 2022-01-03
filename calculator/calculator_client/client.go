@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -23,7 +25,9 @@ func main() {
 	// doUnary(c)
 	// doServerSreaming(c)
 	// doClientStreaming(c)
-	doBiDiStreaming(c)
+	// doBiDiStreaming(c)
+
+	doErrorUnary(c)
 }
 
 func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
@@ -153,4 +157,25 @@ func doBiDiStreaming(c calculatorpb.CalculatorServiceClient) {
 	}()
 
 	<-waitc
+}
+
+func doErrorUnary(c calculatorpb.CalculatorServiceClient) {
+	fmt.Printf("Sending Error Unary requests.")
+
+	res, err := c.SquareRoot(context.Background(), &calculatorpb.SquareRootRequest{Number: int32(-36)})
+
+	if err != nil {
+		resErr, ok := status.FromError(err)
+		if ok {
+			fmt.Println(resErr.Message())
+			fmt.Println(resErr.Code())
+			if resErr.Code() == codes.InvalidArgument {
+				fmt.Println("We sent negative number")
+			}
+		} else {
+			log.Fatalf("Big Error calling SquareRoot: %v", err)
+		}
+	}
+
+	fmt.Printf("Result of SquareRoot is %v", res.GetNumberRoot())
 }
